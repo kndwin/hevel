@@ -1,0 +1,20 @@
+name = "hevel"
+compatibility_date = "2024-03-04"
+
+kv_namespaces = [
+	{ binding = "hevel-kv", id = "b8ee941a800941c1835ccdae1a00ab99"}
+]                             
+
+[dev]
+ip = "0.0.0.0"
+port = 8080
+
+[env.dev.vars]
+DATABASE_URL = "libsql://hevel-kndwin.turso.io" 
+DATABASE_AUTH_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MTE4NDU1OTEsImlkIjoiY2Y0ZThlOWItYTUxNC00OTBiLTgyZTItMzBiMWJiNjg4YjA1In0.HRcYo2KCN-svK0xSR-HzRx0ZyqKmrHvlYZnJGHHpvMnkEhDTUyAV38QUtfHzUEfX3LWCp5is9HTe_NqL1D9cAw"
+GITHUB_CLIENT_ID="Ov23lidpdIBGeWeONUio"
+GITHUB_CLIENT_SECRET="b04811eb27062cd4474acb3aa6588da41c699e22"
+
+kv_namespaces = [
+	{ binding = "hevel-kv", id = "b8ee941a800941c1835ccdae1a00ab99"}
+]                             
