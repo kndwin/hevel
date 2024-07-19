@@ -75,6 +75,21 @@ export const columns: ColumnDef<Job>[] = [
     ),
   },
   {
+    accessorKey: "status",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
+    cell: ({ row }) => (
+      <Badge
+        key={`status-${row.original.id}`}
+        variant="outline"
+        className="capitalize"
+      >
+        {row.getValue("status")}
+      </Badge>
+    ),
+  },
+  {
     id: "actions",
     cell: ({ row, table }) => (
       <DataTableRowActions row={row} actions={table.options?.meta?.actions} />

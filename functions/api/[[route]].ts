@@ -3,6 +3,7 @@ import { logger } from "hono/logger";
 import { showRoutes } from "hono/dev";
 
 import * as jobs from "@/modules/jobs/server/rpc";
+import * as resumes from "@/modules/resume/server/rpc";
 import * as applications from "@/modules/applications/server/rpc";
 import * as auth from "@/shared/auth/server/rpc";
 import { log } from "@/shared/server/log";
@@ -32,6 +33,7 @@ const app = new Hono()
     return c.json({ status: "success" });
   })
   .route("/jobs", jobs.route)
+  .route("/resumes", resumes.route)
   .route("/applications", applications.route)
   .route("/auth", auth.route);
 

@@ -1,5 +1,5 @@
 import { zodSchema } from "@/shared/server/db/schema";
-import { randPastDate, randUuid } from "@ngneat/falso";
+import { randPastDate, randRecentDate } from "@ngneat/falso";
 import { z } from "zod";
 
 export function createMockApplicationToDatabase(props: {
@@ -9,10 +9,9 @@ export function createMockApplicationToDatabase(props: {
   return {
     jobId: props.jobId,
     userId: props.userId,
-    id: randUuid(),
     status: getRandomStatus(),
     sentiment: getRandomSentiment(),
-    appliedAt: randPastDate(),
+    appliedAt: randRecentDate({ days: 45 }),
     updatedAt: randPastDate(),
   };
 }

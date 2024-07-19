@@ -120,7 +120,7 @@ function DynamicDashboard() {
           viewportProps={{
             style: {
               height: "100%",
-              maxHeight: "calc(100vh - 56px)",
+              maxHeight: "calc(100vh - 55px)",
             },
           }}
         >
@@ -132,7 +132,7 @@ function DynamicDashboard() {
 }
 
 function StaticDashboard() {
-  const [collapsed, setCollapsed] = useCollapseSideNav();
+  const [collapsed] = useCollapseSideNav();
 
   return (
     <div className="min-h-screen h-full w-full flex">
@@ -194,7 +194,6 @@ function Header() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link to="/">Logout</Link>
           </DropdownMenuItem>
@@ -209,7 +208,14 @@ function CollaspedNav() {
   return (
     <div className="flex flex-col items-center">
       <div className="h-14 lg:h-[60px] flex justify-center border-b w-full">
-        <Link to="/jobs" className="flex items-center gap-2 font-semibold">
+        <Link
+          search={(prev) => ({
+            pageNumber: 0,
+            pageSize: 10,
+          })}
+          to="/jobs"
+          className="flex items-center gap-2 font-semibold"
+        >
           <img src="/logo.svg" className="h-6 w-6" />
         </Link>
       </div>
@@ -217,6 +223,10 @@ function CollaspedNav() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
+              search={(prev) => ({
+                pageNumber: 0,
+                pageSize: 10,
+              })}
               to="/jobs"
               aria-selected={location.pathname === "/jobs"}
               className="flex items-center justify-center rounded-lg w-10 py-2 text-muted-foreground transition-all hover:text-primary aria-selected:bg-muted"
@@ -229,6 +239,7 @@ function CollaspedNav() {
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
+              search={(prev) => prev}
               to="/applications"
               aria-selected={location.pathname === "/applications"}
               className="flex items-center justify-center rounded-lg w-10 py-2 text-muted-foreground transition-all hover:text-primary aria-selected:bg-muted"
@@ -272,7 +283,11 @@ function Navigation() {
   return (
     <div className="flex h-full max-h-screen flex-col gap-2">
       <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-        <Link to="/jobs" className="flex items-center gap-2 font-semibold">
+        <Link
+          search={(prev) => prev}
+          to="/jobs"
+          className="flex items-center gap-2 font-semibold"
+        >
           <img src="/logo.svg" className="h-6 w-6" />
           <span className="">Hevel</span>
         </Link>
@@ -281,6 +296,7 @@ function Navigation() {
       <div className="flex-1">
         <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
           <Link
+            search={(prev) => prev}
             to="/jobs"
             aria-selected={location.pathname === "/jobs"}
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary aria-selected:bg-muted"
@@ -289,6 +305,7 @@ function Navigation() {
             Jobs
           </Link>
           <Link
+            search={(prev) => prev}
             to="/applications/kanban"
             aria-selected={location.pathname.includes("/applications")}
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary aria-selected:bg-muted"
@@ -348,7 +365,7 @@ function Notifications() {
       <PopoverContent align="center" alignOffset={4} sideOffset={4}>
         {notifications.map((notification, index) => (
           <div
-            key={index}
+            key={`notifications-${index}`}
             className="flex items-center gap-2 p-2 hover:bg-muted ring-muted ring-opacity-10 rounded-lg transition-all bg-muted/10"
           >
             <Bell className="h-8 w-8" />

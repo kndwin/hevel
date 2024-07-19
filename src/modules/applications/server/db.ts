@@ -7,7 +7,7 @@ import { relations } from "drizzle-orm";
 
 export const Applications = sqliteTable("applications", {
   id: text("id")
-    .$default(() => ulid())
+    .$default(() => `appl_${ulid()}`)
     .primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -19,10 +19,11 @@ export const Applications = sqliteTable("applications", {
   sentiment: text("sentiment"),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })
     .defaultNow()
-    .$onUpdateFn(() => new Date(Date.now())),
+    .$onUpdateFn(() => new Date(Date.now()))
+    .notNull(),
   appliedAt: integer("applied_at", { mode: "timestamp_ms" })
     .defaultNow()
-    .$onUpdateFn(() => new Date(Date.now())),
+    .notNull(),
 });
 
 export const ApplicationsRelations = relations(Applications, ({ one }) => ({
@@ -35,3 +36,24 @@ export const ApplicationsRelations = relations(Applications, ({ one }) => ({
     references: [User.id],
   }),
 }));
+
+export const KanbanMetadata = sqliteTable("kanban_metadata", {
+  id: text("id")
+    .$default(() => `kbmd_${ulid()}`)
+    .primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => User.id),
+  module: text("module").notNull(),
+  columnId: text("column_id").notNull(),
+  positionIds: text("position_ids", { mode: "json" })
+    .$type<string[]>()
+    .notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .defaultNow()
+    .notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .defaultNow()
+    .$onUpdateFn(() => new Date(Date.now()))
+    .notNull(),
+});

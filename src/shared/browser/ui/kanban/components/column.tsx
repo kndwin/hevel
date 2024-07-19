@@ -2,8 +2,7 @@ import { HTMLProps, useEffect, useRef, useState } from "react";
 import invariant from "tiny-invariant";
 import { Card } from "@/shared/browser/ui/card";
 import { dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-
-import { cva } from "class-variance-authority";
+import { cn } from "../../utils";
 
 export function KanbanColumn({
   children,
@@ -15,45 +14,39 @@ export function KanbanColumn({
   id: string;
 } & HTMLProps<HTMLDivElement>) {
   const ref = useRef(null);
-  const [isDraggedOver, setIsDraggedOver] = useState(false);
+  const [draggedState, setDraggedState] = useState<"dragged-over" | "idle">(
+    "idle"
+  );
 
   useEffect(() => {
     invariant(ref.current);
     return dropTargetForElements({
       element: ref.current,
       onDragEnter: () => {
-        setIsDraggedOver(true);
+        console.log("dragging over column: ", id);
+        setDraggedState("dragged-over");
       },
-      getData: () => ({ type: "column", id }),
+      getData: () => ({ type: "column", id, columnId: id }),
       onDragLeave: () => {
-        setIsDraggedOver(false);
+        setDraggedState("idle");
       },
       onDrop: () => {
-        setIsDraggedOver(false);
+        setDraggedState("idle");
       },
     });
   }, []);
+
   return (
     <Card
       ref={ref}
-      className={droppableColumnVariants({
-        draggedOver: isDraggedOver,
-        className,
-      })}
+      data-state={draggedState}
+      className={cn(
+        "flex flex-col w-full flex-1 h-auto data-[state=dragged-over]:bg-secondary",
+        className
+      )}
       {...props}
     >
       {children}
     </Card>
   );
 }
-
-const droppableColumnVariants = cva("p-4 flex flex-col gap-4", {
-  variants: {
-    draggedOver: {
-      true: "bg-accent",
-    },
-  },
-  defaultVariants: {
-    draggedOver: false,
-  },
-});

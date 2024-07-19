@@ -4,10 +4,13 @@ import { createMiddleware } from "hono/factory";
 import { drizzle } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
 
-import { schema } from "./schema";
+import { schema, relations } from "./schema";
 
 function getDB(env: { url: string; authToken: string }) {
-  return Object.assign(drizzle(createClient(env), { schema }), { ...schema });
+  return Object.assign(
+    drizzle(createClient(env), { schema: { ...schema, ...relations } }),
+    { ...schema }
+  );
 }
 
 export const withDB: MiddlewareHandler<{

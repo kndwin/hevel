@@ -12,9 +12,9 @@ export function ViewJobContent({
     <div className="flex flex-col gap-y-6">
       <div className="inline-flex gap-x-2">
         <p>{AUD.format(job.salary)}</p>
-        {job.techStack.split(",").map((ts) => (
-          <Badge variant="secondary">{ts}</Badge>
-        ))}
+        {job.techStack
+          ?.split(",")
+          .map((ts) => <Badge variant="secondary">{ts}</Badge>)}
       </div>
       <div
         className="prose prose-sm"

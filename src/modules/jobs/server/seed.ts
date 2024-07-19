@@ -10,7 +10,6 @@ import {
   randProgrammingLanguage,
   randSentence,
   randUrl,
-  randUuid,
 } from "@ngneat/falso";
 
 export function createMockJobToDatabase(): z.infer<
@@ -23,10 +22,13 @@ export function createMockJobToDatabase(): z.infer<
     salary: randNumber({ min: 100000, max: 150000 }),
     source: randCompanyName(),
     sourceUrl: randUrl(),
-    techStack: randProgrammingLanguage(),
+    techStack: Array.from({ length: 2 + Math.floor(Math.random() * 5) }, () =>
+      randProgrammingLanguage()
+    )
+      .join(",")
+      .replace(/,$/, ""),
     descriptionInHTML: getMockJobDescription(),
     createdAt: randPastDate(),
-    id: randUuid(),
     updatedAt: randPastDate(),
   };
 }
@@ -48,6 +50,14 @@ function getMockJobDescription() {
     h1(randJobTitle()) +
     p(randParagraph()) +
     h2(randSentence()) +
+    p(randParagraph()) +
+    p(randParagraph()) +
+    h2(randSentence()) +
+    p(randParagraph()) +
+    p(randParagraph()) +
+    h2(randSentence()) +
+    p(randParagraph()) +
+    p(randParagraph()) +
     p(randParagraph())
   );
 }

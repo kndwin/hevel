@@ -1,13 +1,1 @@
-{
-  "version": "5",
-  "dialect": "sqlite",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "5",
-      "when": 1711849879957,
-      "tag": "0000_abnormal_justice",
-      "breakpoints": true
-    }
-  ]
-}
+{"version":"6","dialect":"sqlite","entries":[]}

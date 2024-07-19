@@ -10,6 +10,10 @@ import { getCookie } from "hono/cookie";
 import { log } from "@/shared/server/log";
 import { withDB, withKV } from "@/shared/server/middleware";
 import { withLucia, withOauth } from "@/shared/auth/server/middleware";
+import { db } from "@/shared/server/db";
+import { schema } from "@/shared/server/db/schema";
+
+const { User, Oauth } = schema;
 
 export const route = new Hono()
   .get("/me", withDB, withKV, withLucia, async (c): Promise<Response> => {
@@ -21,15 +25,11 @@ export const route = new Hono()
     const { session, user } = await c.var.lucia.validateSession(sessionId);
     return new Response(JSON.stringify({ user, session }), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     });
   })
   .get("/login/github", withOauth, async (c): Promise<Response> => {
-    const {
-      oauth: { github },
-    } = c.var;
+    const github = c.var.oauth.github;
     const state = generateState();
     log.debug("state: ", state);
     const url = await github.createAuthorizationURL(state);
@@ -50,49 +50,18 @@ export const route = new Hono()
   })
   .get(
     "/login/github/callback",
-    withDB,
-    withKV,
-    withOauth,
-    withLucia,
+    ...[withDB, withKV, withOauth, withLucia],
     async (c): Promise<Response> => {
       // Initialize variables and methods
       const { lucia, db, oauth } = c.var;
-      const request = c.req;
+      const req = c.req;
       const redirectUrl = `${env(c).BASE_URL}/jobs`;
 
-      // TODO: find a better way to redirect to home page
-      async function doesGithubUserExist(id: string) {
-        const result = await db.query.Oauth.findFirst({
-          where: (oauth, { eq, and }) =>
-            and(eq(oauth.providerUserId, id), eq(oauth.providerId, "github")),
-        });
-        log.debug("doesGithubUserExist: ", result);
-        return result;
-      }
-      async function insertGithubUser(githubResponse: GithubResponse) {
-        const userId = ulid();
-        await db.transaction(async (tx) => {
-          await tx.insert(db.User).values({
-            id: userId,
-            name: githubResponse.name,
-            email: githubResponse.email,
-            avatarUrl: githubResponse.avatar_url,
-          });
-          await tx.insert(db.Oauth).values({
-            providerId: "github",
-            providerUserId: `${githubResponse.id}`,
-            userId,
-          });
-        });
-        log.debug("inserted user: ", userId);
-        return userId;
-      }
-
       // Below code follow Web standard so you can copy and paste it to your project
-      const cookies = parseCookies(request.raw.headers.get("Cookie") ?? "");
+      const cookies = parseCookies(req.raw.headers.get("Cookie") ?? "");
       const stateCookie = cookies.get("github_oauth_state") ?? null;
 
-      const url = new URL(request.url);
+      const url = new URL(req.url);
       log.debug("url: ", url.toString());
       const state = url.searchParams.get("state");
       log.debug("state: ", state);
@@ -101,12 +70,9 @@ export const route = new Hono()
 
       // verify state
       if (!state || !stateCookie || !code || stateCookie !== state) {
-        log.error("Invalid state");
-        log.error({ state, stateCookie, code });
+        log.error("Invalid state", { state, stateCookie, code });
 
-        return new Response(null, {
-          status: 400,
-        });
+        return new Response(null, { status: 400 });
       }
 
       try {
@@ -122,9 +88,11 @@ export const route = new Hono()
           (await githubUserResponse.json()) as GithubResponse;
 
         log.debug("githubUserResult: ", githubUserResult);
-        const existingUser = await doesGithubUserExist(
-          `${githubUserResult.id}`
-        );
+        const existingUser = await doesOAuthbUserExist({
+          db,
+          providerId: "github",
+          id: `${githubUserResult.id}`,
+        });
         log.debug("existingUser: ", existingUser);
 
         if (existingUser) {
@@ -142,7 +110,15 @@ export const route = new Hono()
           });
         }
 
-        const userId = await insertGithubUser(githubUserResult);
+        const userId = await insertOauthUser({
+          db,
+          oauthUser: {
+            id: ulid(),
+            name: githubUserResult.login,
+            email: githubUserResult.email,
+            avatarUrl: githubUserResult.avatar_url,
+          },
+        });
         log.debug("userId: ", userId);
         const session = await lucia.createSession(userId, {});
         log.debug("session: ", session);
@@ -158,14 +134,9 @@ export const route = new Hono()
       } catch (e) {
         log.error(e);
         if (e instanceof OAuth2RequestError) {
-          throw new HTTPException(400, {
-            cause: e,
-            message: e.message,
-          });
+          throw new HTTPException(400, { cause: e, message: e.message });
         }
-        throw new HTTPException(500, {
-          cause: e,
-        });
+        throw new HTTPException(500, { cause: e });
       }
     }
   );
@@ -204,3 +175,50 @@ type GithubResponse = {
   created_at: string;
   updated_at: string;
 };
+
+async function doesOAuthbUserExist(props: {
+  db: typeof db;
+  providerId: "github";
+  id: string;
+}) {
+  const { db, providerId, id } = props;
+  const result = await db.query.Oauth.findFirst({
+    where: (oauth, { eq, and }) =>
+      and(eq(oauth.providerUserId, id), eq(oauth.providerId, providerId)),
+  });
+  log.debug("doesGithubUserExist: ", result);
+  return result;
+}
+
+// TODO: find a better way to redirect to home page
+async function insertOauthUser(props: {
+  db: typeof db;
+  oauthUser: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string;
+  };
+}) {
+  const { db, oauthUser } = props;
+
+  let user = {} as typeof User.$inferSelect;
+  await db.transaction(async (tx) => {
+    user = (
+      await tx
+        .insert(User)
+        .values({
+          name: oauthUser.name,
+          email: oauthUser.email,
+          avatarUrl: oauthUser.avatarUrl,
+        })
+        .returning()
+    )[0];
+    await tx.insert(Oauth).values({
+      providerId: "github",
+      providerUserId: `${oauthUser.id}`,
+      userId: user.id,
+    });
+  });
+  return user.id;
+}

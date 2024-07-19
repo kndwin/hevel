@@ -10,6 +10,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/shared/browser/ui/card";
+import { ScrollArea } from "@/shared/browser/ui/scroll-area";
 
 import { UpdateJobForm } from "./update";
 import { NewJobForm } from "./new";
@@ -54,9 +55,13 @@ export function CardJobForm(props: {
             <XIcon />
           </button>
         </CardHeader>
-        <CardContent>
-          <ViewJobContent job={props.job} />
-        </CardContent>
+        <ScrollArea
+          viewportProps={{ style: { height: "calc(100vh - 210px)" } }}
+        >
+          <CardContent>
+            <ViewJobContent job={props.job} />
+          </CardContent>
+        </ScrollArea>
       </>
     );
   }

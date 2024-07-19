@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/libsql";
 import { createClient } from "@libsql/client";
-import { schema } from "./schema";
+import { relations, schema } from "./schema";
 
 const libsqlClient = createClient({
   url: process.env.DATABASE_URL,
@@ -8,7 +8,7 @@ const libsqlClient = createClient({
 });
 
 const drizzleClient = drizzle(libsqlClient, {
-  schema,
+  schema: { ...schema, ...relations },
 });
 
 export const db = Object.assign(drizzleClient, { ...schema });

@@ -1,54 +1,53 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PreviewResume } from "@/modules/resume/preview";
+import { z } from "zod";
 import { ListResume } from "@/modules/resume/list";
-import type { Resume } from "@/modules/resume/list";
-import { useState } from "react";
-import { ulid } from "ulidx";
+import { rpc } from "@/shared/browser/rpc/client";
 
+const searchSchema = z.object({
+  baseResume: z.string().optional(),
+  pageNumber: z.number().catch(0),
+  pageSize: z.number().catch(10),
+});
 export const Route = createFileRoute("/_home/resume")({
   component: () => <Resume />,
+  validateSearch: (search) => searchSchema.parse(search),
+  loaderDeps: ({ search }) => ({ search }),
+  loader: async ({ deps }) => {
+    const baseResumePromise = rpc.resumes.base.$get({
+      query: {
+        pageNumber: deps.search.pageNumber.toString(),
+        pageSize: deps.search.pageSize.toString(),
+      },
+    });
+
+    const tailoredResumePromise = rpc.resumes.tailored.$get({
+      query: {
+        pageNumber: deps.search.pageNumber.toString(),
+        pageSize: deps.search.pageSize.toString(),
+      },
+    });
+
+    const [baseResumeRes, tailoredResumeRes] = await Promise.all([
+      baseResumePromise,
+      tailoredResumePromise,
+    ]);
+
+    const baseResumes = (await baseResumeRes.json()).data;
+    const tailoredResumes = (await tailoredResumeRes.json()).data;
+    return {
+      resumes: {
+        base: baseResumes,
+        tailored: tailoredResumes,
+      },
+    };
+  },
 });
 
-const resumes: Resume[] = [
-  {
-    ulid: ulid(),
-    updatedAt: new Date(),
-    title: "Software Engineer",
-    content: "# Kevin Nguyen \n San Francisco, CA \n ## Working Experience",
-    type: "base",
-  },
-  {
-    ulid: ulid(),
-    updatedAt: new Date(),
-    title: "Software Engineer - Netflix",
-    content:
-      "# Kevin Nguyen - Netflix \n San Francisco, CA \n ## Working Experience",
-    type: "tailored",
-  },
-  {
-    ulid: ulid(),
-    updatedAt: new Date(),
-    title: "Software Engineer - Google",
-    content:
-      "# Kevin Nguyen - Google \n San Francisco, CA \n ## Working Experience",
-    type: "tailored",
-  },
-  {
-    ulid: ulid(),
-    updatedAt: new Date(),
-    title: "Software Engineer - Facebook",
-    content:
-      "# Kevin Nguyen - Facebook\n San Francisco, CA \n ## Working Experience",
-    type: "tailored",
-  },
-];
-
 function Resume() {
-  const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
+  const { resumes } = Route.useLoaderData();
   return (
     <main className="flex flex-1">
-      <ListResume resumes={resumes} onSelectResume={setSelectedResume} />
-      <PreviewResume resumeInMd={selectedResume?.content ?? ""} />
+      <ListResume resumes={resumes} />
     </main>
   );
 }

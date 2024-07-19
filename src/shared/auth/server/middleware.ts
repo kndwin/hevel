@@ -8,7 +8,8 @@ import { GitHub, Google } from "arctic";
 
 import type { LibsqlClient } from "@/shared/server/db";
 import { UnstorageSessionAdapter, UserAdapter } from "./session-adapter";
-import { HTTPException } from "hono/http-exception";
+import { User } from "lucia";
+import { Session } from "lucia";
 
 function initLucia(db: LibsqlClient, kv: Storage) {
   const sessionAdapter = new UnstorageSessionAdapter(kv, new UserAdapter(db));
@@ -65,17 +66,40 @@ export const withOauth: MiddlewareHandler<{
   await next();
 });
 
-export const authenticate: MiddlewareHandler<{
+export const protect = createMiddleware<{
   Variables: {
-    db: LibsqlClient;
     lucia: Lucia;
+    user: User;
+    session: Session;
   };
-}> = createMiddleware(async (c, next) => {
-  const sessionId = getCookie(c, c.var.lucia.sessionCookieName) ?? null;
+}>(async (ctx, next) => {
+  const sessionId = getCookie(ctx, ctx.var.lucia.sessionCookieName) ?? null;
   if (!sessionId) {
-    throw new HTTPException(403, { message: "Unauthorized" });
+    return new Response(null, {
+      status: 403,
+      headers: {
+        Location: "/",
+      },
+    });
   }
-  next();
+  const { session, user } = await ctx.var.lucia.validateSession(sessionId);
+  if (session && session.fresh) {
+    ctx.header(
+      "Set-Cookie",
+      ctx.var.lucia.createSessionCookie(session.id).serialize(),
+      { append: true }
+    );
+  }
+  if (!session) {
+    ctx.header(
+      "Set-Cookie",
+      ctx.var.lucia.createBlankSessionCookie().serialize(),
+      { append: true }
+    );
+  }
+  ctx.set("user", user as User);
+  ctx.set("session", session as Session);
+  await next();
 });
 
 declare module "lucia" {

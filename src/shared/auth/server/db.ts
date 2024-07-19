@@ -1,5 +1,6 @@
 import { sqliteTable, text, primaryKey } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
+import { ulid } from "ulidx";
 
 export const Oauth = sqliteTable(
   "oauth_accounts",
@@ -23,7 +24,10 @@ export const OauthRelations = relations(Oauth, ({ one }) => ({
 }));
 
 export const User = sqliteTable("user", {
-  id: text("id").notNull().primaryKey(),
+  id: text("id")
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => `user_${ulid()}`),
   name: text("name").notNull(),
   email: text("email"),
   avatarUrl: text("avatar_url").notNull(),
